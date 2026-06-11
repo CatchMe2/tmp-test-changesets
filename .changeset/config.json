@@ -8,8 +8,8 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "privatePackages": {
-    "version": false,
+    "version": true,
     "tag": false
   },
-  "ignore": []
+  "ignore": ["@tmp-test-changesets/app"]
 }
