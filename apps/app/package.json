@@ -1,0 +1,19 @@
+{
+  "name": "@tmp-test-changesets/app",
+  "version": "0.1.0",
+  "description": "Private app consuming both packages",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@tmp-test-changesets/private-lib": "workspace:*",
+    "@tmp-test-changesets/public-lib": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
