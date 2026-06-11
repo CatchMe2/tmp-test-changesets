@@ -32,4 +32,4 @@ jobs:
       # and no changeset covers it. Private packages and apps are excluded via
       # `privatePackages: { version: false }` in .changeset/config.json.
       - name: Check changesets for changed public packages
-        run: pnpm changeset status --since=origin/${{ github.base_ref }}
+        run: pnpm changeset status --since=main
