@@ -17,6 +17,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/create-github-app-token@v3
         id: app-token
@@ -26,15 +27,16 @@ jobs:
 
       - name: Get GitHub App User ID
         id: get-user-id
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup pnpm
@@ -44,10 +46,17 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-          registry-url: "https://registry.npmjs.org"
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Another queued release may have already pushed to main.
+      # Rebase onto the latest main before versioning.
+      - name: Rebase onto latest main
+        run: |
+          git fetch origin main
+          git rebase origin/main
 
       - name: Version packages
         run: |
@@ -55,16 +64,19 @@ jobs:
           pnpm install --lockfile-only
 
       - name: Commit version bump
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
-          gh auth setup-git
+          git config user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+
           git add -A
+
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+
           git commit -m "chore: version packages"
-          git push origin main
-          git push origin --tags
+          git push origin main --follow-tags
 
       - name: Build and publish to npm
         run: pnpm release
